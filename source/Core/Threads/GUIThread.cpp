@@ -144,6 +144,28 @@ OperatingMode guiHandleDraw(void) {
 void guiRenderLoop(void) {
   OperatingMode newMode = guiHandleDraw(); // This does the screen drawing
 
+  // Track cumulative soldering time
+  static TickType_t lastSolderingMinuteCheck = 0;
+  if (currentOperatingMode == OperatingMode::Soldering || currentOperatingMode == OperatingMode::SolderingProfile) {
+    TickType_t now = xTaskGetTickCount();
+    if (lastSolderingMinuteCheck == 0) {
+      lastSolderingMinuteCheck = now; // Start tracking
+    } else if ((now - lastSolderingMinuteCheck) >= (60 * configTICK_RATE_HZ)) {
+      // One minute of soldering passed
+      uint16_t currentMinutes = getSettingValue(SettingsOptions::TotalSolderingMinutes);
+      if (currentMinutes < 0xFFFF) {
+        setSettingValue(SettingsOptions::TotalSolderingMinutes, currentMinutes + 1);
+      }
+      lastSolderingMinuteCheck = now;
+      // Save every 10 minutes to reduce flash wear
+      if ((currentMinutes + 1) % 10 == 0) {
+        saveSettings();
+      }
+    }
+  } else {
+    lastSolderingMinuteCheck = 0; // Reset when not soldering
+  }
+
   // Post draw we handle any state transitions
 
   if (newMode != currentOperatingMode) {

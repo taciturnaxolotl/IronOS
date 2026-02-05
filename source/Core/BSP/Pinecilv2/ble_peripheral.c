@@ -280,7 +280,10 @@ int ble_start_adv(void) {
   char     nameBuffer[16];
   uint32_t scratch = getDeviceID() & 0xFFFFFFFF;
   scratch ^= (getDeviceID() >> 32) & 0xFFFFFFFF;
-  int nameLen = snprintf(nameBuffer, 16, "Pinecil-%08X", (int)scratch);
+  int nameLen = snprintf(nameBuffer, 16, "PrattlePin-%04X", (int)(scratch & 0xFFFF));
+
+  // Set the GAP device name to match advertising name
+  bt_set_name(nameBuffer);
 
   // scan and response data must each stay < 31 bytes
   struct bt_data adv_data[2] = {BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_NO_BREDR | BT_LE_AD_GENERAL)), BT_DATA(BT_DATA_NAME_COMPLETE, nameBuffer, nameLen)};
